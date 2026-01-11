@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dollar Bot User</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        :root { --primary: #ff2b2b; --bg: #f8f9fa; --card: #ffffff; --text: #1c1c1e; --text-sec: #6d6d71; --border: #e0e0e0; --input-bg: #f2f2f7; --shadow: 0 4px 12px rgba(0,0,0,0.05); --gradient: linear-gradient(135deg, #ff2b2b 0%, #b30000 100%); }
+        body.dark-mode { --bg: #0f0f0f; --card: #1e1e1e; --text: #ffffff; --text-sec: #aaaaaa; --border: #333333; --input-bg: #2b2b2b; --shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding-bottom: 90px; -webkit-font-smoothing: antialiased; }
+        
+        /* LOADING */
+        #loadingScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
+        .pulse-logo { width: 100px; animation: breathe 2s infinite; border-radius: 20px; }
+        @keyframes breathe { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
+        
+        /* POPUP COMMON */
+        .popup { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; display:none; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
+        .popup-content { background: var(--card); padding: 30px 25px; width: 85%; max-width: 320px; border-radius: 20px; text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: popUpAnim 0.3s; }
+        @keyframes popUpAnim { from{transform: scale(0.8); opacity: 0;} to{transform: scale(1); opacity: 1;} }
+        
+        /* HEADER (Rounded Shape) */
+        .header { background: var(--card); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 50; border-radius: 0 0 25px 25px; }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        .user-name { font-weight: 700; font-size: 15px; margin: 0; display: flex; align-items: center; gap: 6px; }
+        .user-bal { font-size: 13px; color: var(--primary); font-weight: 600; margin-top: 2px; }
+        
+        /* ICONS WITH RED GLOW */
+        .icon-btn { font-size: 20px; color: var(--text); cursor: pointer; margin-left: 15px; transition: 0.3s; text-shadow: 0 0 12px rgba(255, 43, 43, 0.6); }
+        
+        /* SECTIONS */
+        .section { display: none; padding: 20px; animation: fadeIn 0.3s; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:translateY(0);} }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        
+        /* BUTTONS */
+        .btn { width: 100%; padding: 14px; background: var(--gradient); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 15px; margin-top: 10px; }
+        .form-control { width: 100%; padding: 14px; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; outline: none; }
+        
+        /* NAV (Rounded Shape) */
+        .nav { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; padding: 15px 0 10px 0; border-top: 1px solid var(--border); z-index: 100; border-radius: 25px 25px 0 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+        .nav-item { text-align: center; color: var(--text-sec); font-size: 11px; width: 60px; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
+        .close-pop { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: var(--text-sec); }
+        
+        /* BANNERS & OFFERS */
+        .banner-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 10px; } .banner-container::-webkit-scrollbar { display: none; } .banner-slide { min-width: 100%; scroll-snap-align: center; border-radius: 12px; overflow: hidden; } .banner-slide img { width: 100%; display: block; }
+        .offer-btn { background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%); color: white; border: none; padding: 8px 24px; border-radius: 50px; font-weight: 600; font-size: 13px; text-decoration: none; display: inline-block; margin-top: 8px; }
+        
+        /* LEADERBOARD & BLUE BADGE */
+        .lb-item { display: flex; align-items: center; justify-content: space-between; background: var(--input-bg); padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .lb-left { display: flex; align-items: center; gap: 12px; } .lb-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover; } .lb-rank { font-weight: bold; width: 20px; text-align: center; }
+        .lb-name { display: flex; align-items: center; gap: 5px; }
+        .rank-1 i { color: #FFD700; font-size: 18px; } .rank-2 i { color: #C0C0C0; font-size: 18px; } .rank-3 i { color: #CD7F32; font-size: 18px; }
+        
+        /* Professional Blue Badge */
+        .blue-badge { color: #3b82f6; font-size: 14px; background: white; border-radius: 50%; box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+        body.dark-mode .blue-badge { background: #1e1e1e; box-shadow: 0 0 8px rgba(59, 130, 246, 0.8); }
+
+        /* INPUT WITH CALCULATION INSIDE */
+        .input-group { position: relative; width: 100%; margin-bottom: 12px; }
+        .input-group input { padding-right: 120px; margin-bottom: 0; }
+        .calc-display { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-sec); font-size: 13px; font-weight: 600; pointer-events: none; display: none; }
+        .calc-display b { color: var(--primary); }
+
+        /* FEE POPUP */
+        .fee-warning { font-size: 14px; color: var(--text); margin-bottom: 20px; line-height: 1.5; }
+        .fee-btn { width: auto; min-width: 100px; padding: 10px 30px; margin: 0 auto; display: block; }
+
+        /* FIXED JOIN POPUP BUTTONS */
+        .popup-btn-container { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .popup-btn-container .btn { margin-top: 0; } 
+    </style>
+</head>
+<body>
+
+    <div id="loadingScreen">
+        <img src="https://i.ibb.co.com/HTYbfgCQ/20260109-193516.png" class="pulse-logo" id="loadingLogo">
+    </div>
+
+    <div id="mainApp" style="display:none;">
+        <div class="header">
+            <div class="user-info">
+                <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" id="headPhoto" class="user-img">
+                <div>
+                    <p class="user-name" id="headName">User</p>
+                    <div class="user-bal"><i class="fa-solid fa-coins"></i> <span id="headBal">0.00</span></div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <i class="fa-solid fa-headset icon-btn" onclick="openSupport()"></i>
+                <i class="fa-solid fa-sun icon-btn" id="themeIcon" onclick="toggleTheme()"></i>
+            </div>
+        </div>
+
+        <div id="home" class="section active">
+            <div id="bannerCon" class="banner-container"></div>
+            <h3>Exclusive Offers</h3>
+            <div id="offerCon"></div>
+        </div>
+
+        <div id="exchange" class="section">
+            <div class="card">
+                <h3>Exchange Currency</h3>
+                <select id="sendM" class="form-control" onchange="updWallet()"><option value="">Select Method</option></select>
+                
+                <div id="walletDiv" style="display:none; background:rgba(255, 43, 43, 0.1); padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid var(--primary);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:8px;">
+                        <span style="font-size:12px; color:var(--text-sec);">Rate: <b style="color:var(--text);" id="infoRate">0 BDT</b></span>
+                        <span style="font-size:12px; color:var(--text-sec);">Min: <b style="color:var(--text);">$<span id="infoMin">0</span></b></span>
+                    </div>
+                    <small style="color:var(--primary); font-weight:bold;">Send Address:</small>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                        <span id="admWallet" style="font-family:monospace; color:var(--text); font-size:13px; word-break: break-all;">...</span>
+                        <i class="fa-solid fa-copy" onclick="cp('admWallet')" style="color:var(--primary); cursor:pointer; font-size:16px;"></i>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <input type="number" id="exAmt" class="form-control" placeholder="Amount ($)" oninput="calcExchange()">
+                    <span class="calc-display" id="calcSpan">= <b id="calcResInside"></b></span>
+                </div>
+
+                <input type="text" id="exTrx" class="form-control" placeholder="Trx ID">
+                
+                <select id="recM" class="form-control" onchange="checkFeeWarning()">
+                    <option value="">Select Wallet</option>
+                    <option value="Bkash">Bkash</option>
+                    <option value="Nagad">Nagad</option>
+                </select>
+                
+                <input type="number" id="exNum" class="form-control" placeholder="Your Wallet Number">
+                <button class="btn" onclick="reqExchange()">Exchange Now</button>
+            </div>
+        </div>
+
+        <div id="history" class="section">
+            <h3>Activity Log</h3>
+            <div id="histList"></div>
+        </div>
+
+        <div id="earn" class="section">
+            <div class="card" style="text-align:center;">
+                <h3>Daily Reward</h3>
+                <i id="dailyIcon" class="fa-solid fa-gift" style="font-size:80px; color:var(--primary); margin:20px 0; animation:float 3s infinite; cursor:pointer;" onclick="handleDailyClick()"></i>
+                <span id="claimText" style="display:block; font-weight:bold; color:var(--primary);">Tap to Claim</span>
+                <p id="vipMsg" style="font-size:11px; color:#3b82f6; display:none; margin-top:5px;"><i class="fa-solid fa-circle-check"></i> VIP Status: 50 Pts/Day</p>
+            </div>
+            <div class="card">
+                <h3>Withdraw</h3>
+                <p>Balance: <b style="color:var(--primary);" id="wBal">0</b> Pts</p>
+                <button class="btn" onclick="openWithdraw()">Withdraw</button>
+            </div>
+            <div class="card">
+                <h3>Invite Friends</h3>
+                <p>Refer and earn 50 Points!</p>
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px; background:var(--input-bg); padding:12px; border-radius:10px;">
+                    <div style="text-align:center; flex:1; border-right:1px solid var(--border);">
+                        <span style="font-size:12px; color:var(--text-sec);">Total Refer</span><br>
+                        <b style="font-size:18px; color:var(--text);" id="refCount">0</b>
+                    </div>
+                    <div style="text-align:center; flex:1;">
+                        <span style="font-size:12px; color:var(--text-sec);">Ref Earned</span><br>
+                        <b style="font-size:18px; color:var(--primary);" id="refEarn">0</b> <small style="font-size:10px;">Pts</small>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="refLinkInput" class="form-control" readonly style="margin:0;">
+                    <button class="btn" style="width:60px;" onclick="copyRefLink()"><i class="fa-solid fa-copy"></i></button>
+                </div>
+            </div>
+            <h3 style="margin-top:20px; color:var(--text);">Top 10 Leaders</h3>
+            <div id="topList" style="padding-bottom:20px;"><p style="text-align:center;">Loading...</p></div>
+        </div>
+
+        <div class="nav">
+            <div class="nav-item active" onclick="nav('home', this)"><i class="fa-solid fa-house"></i>Home</div>
+            <div class="nav-item" onclick="nav('exchange', this)"><i class="fa-solid fa-right-left"></i>Swap</div>
+            <div class="nav-item" id="navHistory" onclick="nav('history', this)"><i class="fa-solid fa-clock-rotate-left"></i>History</div>
+            <div class="nav-item" onclick="nav('earn', this)"><i class="fa-solid fa-gift"></i>Earn</div>
+        </div>
+
+        <!-- UPDATED JOIN POPUP -->
+        <div id="joinPopup" class="popup">
+            <div class="popup-content">
+                <i class="fa-brands fa-telegram" style="font-size:40px; color:var(--primary); margin-bottom:15px;"></i>
+                <h3>Join Community</h3>
+                <p>You must join our official channel to use this bot.</p>
+                
+                <!-- Fixed Gap Logic -->
+                <div class="popup-btn-container">
+                    <button class="btn" onclick="openChannel()">Join Channel</button>
+                    <button class="btn" id="verifyBtn" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border);" onclick="manualVerify()">I Joined</button>
+                </div>
+                
+                <p id="verifyMsg" style="font-size:12px; margin-top:10px; color:red; display:none;"></p>
+            </div>
+        </div>
+
+        <!-- WITHDRAW POPUP -->
+        <div id="wPopup" class="popup"><div class="popup-content"><span class="close-pop" onclick="closePop('wPopup')">&times;</span><h3>Withdraw</h3><div id="wFormDiv"><input type="number" id="wPoints" class="form-control" placeholder="Points (Min 1000)"><select id="wMethod" class="form-control"><option value="">Select Method</option><option value="Bkash">Bkash</option><option value="Nagad">Nagad</option></select><input type="number" id="wNumber" class="form-control" placeholder="Wallet Number"><button class="btn" onclick="submitWithdraw()">Confirm</button></div><div id="wOffMsg" style="display:none; color:red; margin-top:10px;"></div></div></div>
+
+        <!-- FEE WARNING POPUP -->
+        <div id="feePopup" class="popup" style="z-index: 1001;">
+            <div class="popup-content">
+                <i class="fa-solid fa-circle-info" style="font-size:40px; color:var(--primary); margin-bottom:15px;"></i>
+                <h3 style="margin-top:0;">Fee Notice</h3>
+                <p class="fee-warning" id="feeText">...</p>
+                <button class="btn fee-btn" onclick="closePop('feePopup')">Ok</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, onSnapshot, query, where, orderBy, increment, serverTimestamp, limit } 
+        from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+        // ******************** CONFIGURATION ********************
+        const BACKEND_URL = "https://dollar-bot-server.onrender.com"; 
+        // *******************************************************
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDYUGAUdAg6_6-vacGnQfZ2tyXBC1vHYTA",
+          authDomain: "redoexchange-bbac4.firebaseapp.com",
+          projectId: "redoexchange-bbac4",
+          storageBucket: "redoexchange-bbac4.firebasestorage.app",
+          messagingSenderId: "419809399280",
+          appId: "1:419809399280:web:f618f5ea28b810d905cd35"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let settings = null, methods = {}, isMember = false, claiming = false;
+        let dailyTimerInterval; 
+        let userReferralCount = 0; 
+        const user = tg.initDataUnsafe.user || { id: "112233", first_name: "Guest", username: "guest" };
+        const uid = user.id.toString();
+
+        async function init() {
+            onSnapshot(doc(db, "settings", "appConfig"), async (s) => { 
+                if(s.exists()) {
+                    settings = s.data();
+                    if(settings.loadingImage) document.getElementById('loadingLogo').src = settings.loadingImage;
+                    document.getElementById('refLinkInput').value = `https://t.me/${settings.botUsername}?startapp=${uid}`;
+                    
+                    // *CHANGED*: Check silently on load (don't show popup yet)
+                    verifyJoin(true); 
+
+                    setTimeout(() => {
+                        document.getElementById('loadingScreen').style.opacity='0'; 
+                        setTimeout(()=>{
+                            document.getElementById('loadingScreen').style.display='none'; 
+                            document.getElementById('mainApp').style.display='block'; 
+                            injectAds(); 
+                        }, 500);
+                    }, 1500); 
+                } 
+            });
+
+            onSnapshot(collection(db, "exchange_methods"), s => {
+                const sel = document.getElementById('sendM'); sel.innerHTML = `<option value="">Select Method</option>`;
+                methods = {};
+                s.forEach(d => { 
+                    const data = d.data();
+                    methods[data.name] = { wallet: data.wallet, rate: data.rate || 0, min: data.min || 5 }; 
+                    sel.innerHTML += `<option value="${data.name}">${data.name}</option>`; 
+                });
+            });
+
+            const uRef = doc(db, "users", uid);
+            const snap = await getDoc(uRef);
+            if (!snap.exists()) {
+                await setDoc(uRef, { name: user.first_name, username: user.username||"", balance: 0, photo: user.photo_url||"", joined: serverTimestamp(), referrals: 0, refEarnings: 0 });
+                const refBy = tg.initDataUnsafe.start_param;
+                if(refBy && refBy !== uid) {
+                    try { 
+                        await updateDoc(doc(db, "users", refBy), { referrals: increment(1), balance: increment(50), refEarnings: increment(50) });
+                        fetch(`${BACKEND_URL}/api/notify-referral`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ referrerId: refBy, newUserName: user.username || user.first_name })
+                        }).catch(e => console.log("Server might be sleeping"));
+                    } catch(e){ console.log("Ref Error:", e); }
+                }
+            }
+            
+            onSnapshot(uRef, s => {
+                const d = s.data();
+                userReferralCount = d.referrals || 0;
+                let nameHtml = d.name;
+                if(userReferralCount >= 100) {
+                    nameHtml += ` <i class="fa-solid fa-circle-check blue-badge"></i>`;
+                    document.getElementById('vipMsg').style.display = 'block'; 
+                } else {
+                    document.getElementById('vipMsg').style.display = 'none';
+                }
+                document.getElementById('headName').innerHTML = nameHtml;
+                document.getElementById('headBal').innerText = d.balance.toFixed(2);
+                document.getElementById('wBal').innerText = d.balance.toFixed(2);
+                if(d.photo) document.getElementById('headPhoto').src = d.photo;
+                document.getElementById('refCount').innerText = d.referrals || 0;
+                document.getElementById('refEarn').innerText = d.refEarnings || 0;
+                checkDaily(d);
+            });
+
+            onSnapshot(collection(db, "banners"), s => {
+                const bC = document.getElementById('bannerCon'); bC.innerHTML = "";
+                s.forEach(d => bC.innerHTML += `<div class="banner-slide"><img src="${d.data().image}" onclick="window.open('${d.data().link}','_blank')"></div>`);
+                startBannerSlide();
+            });
+
+            onSnapshot(collection(db, "offers"), s => {
+                const oC = document.getElementById('offerCon'); oC.innerHTML = "";
+                s.forEach(d => {
+                    const o = d.data();
+                    oC.innerHTML += `<div class="card" style="display:flex; gap:15px; align-items:center;"><img src="${o.image}" width="50" height="50" style="border-radius:12px; object-fit:cover;"><div style="flex:1;"><b style="font-size:15px;">${o.title}</b><br><a href="${o.link}" class="offer-btn" target="_blank">Visit Offer</a></div></div>`;
+                });
+            });
+
+            onSnapshot(query(collection(db, "users"), orderBy("referrals", "desc"), limit(10)), s => {
+                const l = document.getElementById('topList'); l.innerHTML = "";
+                let i = 1;
+                s.forEach(d => {
+                    const u = d.data();
+                    let rankIcon = i;
+                    if(i === 1) rankIcon = '<i class="fa-solid fa-trophy rank-1"></i>';
+                    else if(i === 2) rankIcon = '<i class="fa-solid fa-medal rank-2"></i>';
+                    else if(i === 3) rankIcon = '<i class="fa-solid fa-medal rank-3"></i>';
+                    let uName = u.name.substring(0,15);
+                    if((u.referrals || 0) >= 100) {
+                        uName += ` <i class="fa-solid fa-circle-check blue-badge"></i>`;
+                    }
+                    l.innerHTML += `<div class="lb-item"><div class="lb-left"><div class="lb-rank">${rankIcon}</div><img src="${u.photo||'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="lb-img"><div class="lb-info"><span class="lb-name">${uName}</span></div></div><span class="lb-refs">${u.referrals || 0} Ref</span></div>`;
+                    i++;
+                });
+            });
+
+            onSnapshot(query(collection(db, "requests"), where("userId", "==", uid), orderBy("date", "desc")), (s) => {
+                const h = document.getElementById('histList'); h.innerHTML = "";
+                if(s.empty) h.innerHTML = "<p style='text-align:center; color:var(--text-sec);'>No history found</p>";
+                else {
+                    s.forEach(d => {
+                        const r = d.data();
+                        let col = r.status==='Approved'?'green': r.status==='Rejected'?'red':'orange';
+                        let txt = r.type==="Exchange" ? `${r.sendMethod} -> ${r.receiveMethod}` : `Withdraw: ${r.method}`;
+                        h.innerHTML += `<div class="card" style="padding:15px; display:flex; justify-content:space-between;"><div><b>${r.type}</b><br><small>${txt}</small><br><b>${r.amount}</b></div><span style="color:${col}; font-weight:bold;">${r.status}</span></div>`;
+                    });
+                }
+            }, (err) => { 
+                if(err.code === 'failed-precondition') document.getElementById('histList').innerHTML = `<p style='text-align:center; color:red;'>⚠️ Index Missing! Tell Admin.</p>`;
+            });
+        }
+
+        // ************ IMPROVED AD INJECTION ************
+        function injectAds() {
+            onSnapshot(collection(db, "adScripts"), (snapshot) => {
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if(data.script) {
+                        const container = document.createElement('div');
+                        container.innerHTML = data.script;
+
+                        // Append HTML elements (divs, iframes, etc.)
+                        Array.from(container.childNodes).forEach(node => {
+                            if (node.tagName !== 'SCRIPT') {
+                                document.body.appendChild(node.cloneNode(true));
+                            }
+                        });
+
+                        // Re-create and execute Scripts
+                        const scripts = container.querySelectorAll('script');
+                        scripts.forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                            document.body.appendChild(newScript);
+                        });
+                    }
+                });
+            });
+        }
+        // ***********************************************
+
+        let slideInterval;
+        function startBannerSlide() {
+            if(slideInterval) clearInterval(slideInterval);
+            const con = document.getElementById('bannerCon');
+            slideInterval = setInterval(() => {
+                if(con.scrollLeft + con.clientWidth >= con.scrollWidth - 10) con.scrollTo({left: 0, behavior: 'smooth'});
+                else con.scrollBy({left: con.clientWidth, behavior: 'smooth'});
+            }, 3000);
+        }
+
+        function checkDaily(d) {
+            const now = new Date();
+            const last = d.lastClaim ? d.lastClaim.toDate() : new Date(0);
+            const isToday = now.toDateString() === last.toDateString();
+            const icon = document.getElementById('dailyIcon');
+            const text = document.getElementById('claimText');
+            
+            if(dailyTimerInterval) clearInterval(dailyTimerInterval);
+
+            if(isToday) {
+                icon.style.color = "#ccc"; icon.style.cursor = "default"; icon.style.animation = "none"; icon.classList.add('disabled-daily'); text.style.color = "var(--text-sec)";
+                const updateTimer = () => {
+                    const currentTime = new Date();
+                    const midnight = new Date();
+                    midnight.setHours(24, 0, 0, 0); 
+                    const diff = midnight - currentTime;
+                    if(diff <= 0) { clearInterval(dailyTimerInterval); text.innerText = "Tap to Claim"; return; }
+                    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((diff % (1000 * 60)) / 1000);
+                    text.innerText = `Next: ${h}h ${m}m ${s}s`;
+                };
+                updateTimer(); dailyTimerInterval = setInterval(updateTimer, 1000);
+            } else {
+                text.innerText = "Tap to Claim"; text.style.color = "var(--primary)"; icon.style.color = "var(--primary)"; icon.style.cursor = "pointer"; icon.style.animation = "float 3s infinite"; icon.classList.remove('disabled-daily');
+            }
+        }
+
+        window.handleDailyClick = async () => {
+            if(!isMember) { verifyJoin(false); return; } // Check on interaction
+            const icon = document.getElementById('dailyIcon');
+            if(icon.classList.contains('disabled-daily')) return alert("Please wait for the timer!");
+            if(claiming) return;
+
+            const uRef = doc(db, "users", uid);
+            const s = await getDoc(uRef);
+            if(new Date().toDateString() === (s.data().lastClaim?.toDate()?.toDateString())) { checkDaily(s.data()); return alert("Already claimed today!"); }
+            
+            claiming = true;
+            if (typeof show_10285447 === 'function') { show_10285447().then(()=>claimReward()).catch(()=>claimReward()); } else { claimReward(); }
+        };
+
+        async function claimReward() {
+            try {
+                let amount = settings.dailyAmount || 10;
+                if(userReferralCount >= 100) {
+                    amount = 50;
+                }
+                await updateDoc(doc(db, "users", uid), { balance: increment(amount), lastClaim: serverTimestamp() });
+                alert(`Claimed ${amount} Points!`);
+            } catch(e) { console.log(e); }
+            claiming = false;
+        }
+
+        window.updWallet = () => { const m = document.getElementById('sendM').value; const div = document.getElementById('walletDiv'); if(methods[m]) { div.style.display = "block"; document.getElementById('admWallet').innerText = methods[m].wallet; document.getElementById('infoRate').innerText = methods[m].rate + " ৳"; document.getElementById('infoMin').innerText = methods[m].min; } else { div.style.display = "none"; } calcExchange(); };
+        
+        window.calcExchange = () => { 
+            const m = document.getElementById('sendM').value; 
+            const amt = parseFloat(document.getElementById('exAmt').value); 
+            const res = document.getElementById('calcResInside'); 
+            const span = document.getElementById('calcSpan');
+            
+            if(methods[m] && amt > 0) {
+                span.style.display = "block"; 
+                res.innerText = (amt * methods[m].rate).toFixed(2) + "৳";
+            } else { 
+                span.style.display = "none"; 
+                res.innerText = ""; 
+            } 
+        };
+        
+        window.checkFeeWarning = () => {
+            const recM = document.getElementById('recM').value;
+            const popup = document.getElementById('feePopup');
+            const msg = document.getElementById('feeText');
+            if(recM === "Bkash") { msg.innerText = "বিকাশের মাধ্যমে Send Money করলে bkash নির্ধারিত ফি প্রযোজ্য হবে"; popup.style.display = "flex"; }
+            else if(recM === "Nagad") { msg.innerText = "নগদ এর মাধ্যমে Send Money করলে Nagad নির্ধারিত ফি প্রযোজ্য হবে"; popup.style.display = "flex"; }
+        };
+
+        window.reqExchange = async () => { 
+            if(!isMember) { verifyJoin(false); return; } // Check on interaction
+            const sendM = document.getElementById('sendM').value; 
+            const amt = document.getElementById('exAmt').value; 
+            const trx = document.getElementById('exTrx').value; 
+            const recM = document.getElementById('recM').value; 
+            const num = document.getElementById('exNum').value; 
+            
+            if(!sendM || !amt || !trx || !recM || !num) return alert("Fill all fields"); 
+            if(parseFloat(amt) < methods[sendM].min) return alert(`Min amount is $${methods[sendM].min}`); 
+
+            await addDoc(collection(db, "requests"), { 
+                userId: uid, userName: user.first_name, type: "Exchange", 
+                sendMethod: sendM, amount: parseFloat(amt), trxId: trx, 
+                receiveMethod: recM, userNumber: num, status: "Pending", 
+                date: serverTimestamp() 
+            }); 
+            
+            const bdt = (parseFloat(amt) * methods[sendM].rate).toFixed(2); 
+            fetch(`${BACKEND_URL}/api/notify-exchange`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: user.username || user.first_name,
+                    userId: uid,
+                    sendMethod: sendM,
+                    recMethod: recM,
+                    number: num,
+                    trx: trx,
+                    amount: amt,
+                    bdtAmount: bdt
+                })
+            }).catch(e => console.log("Notify Error", e));
+
+            alert("Success!"); nav('history', document.getElementById('navHistory')); 
+        };
+
+        // *CHANGED*: Navigation now checks membership dynamically
+        window.nav = (n, e) => { 
+            if(!isMember && n !== 'home') { 
+                verifyJoin(false); // Check on interaction (false = show popup if not member)
+                return; 
+            } 
+            document.querySelectorAll('.section').forEach(x=>x.classList.remove('active')); 
+            document.getElementById(n).classList.add('active'); 
+            document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); 
+            e.classList.add('active'); 
+        };
+
+        window.toggleTheme = () => { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode')?'dark':'light'); }; if(localStorage.getItem('theme')==='dark') toggleTheme();
+        
+        window.manualVerify = () => verifyJoin(false, true); 
+
+        // *CHANGED*: Added 'silent' parameter to control popup visibility
+        window.verifyJoin = async (silent = false, isManual = false) => { 
+            if(!settings || !settings.requiredChannel) { isMember = true; document.getElementById('joinPopup').style.display='none'; return; } 
+            
+            if(isManual) { document.getElementById('verifyBtn').innerText = "Checking..."; document.getElementById('verifyMsg').style.display = 'none'; }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/verify-member`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: uid, channelUsername: settings.requiredChannel }) });
+                const data = await res.json();
+                
+                if(data.isMember) { 
+                    isMember = true; 
+                    document.getElementById('joinPopup').style.display='none'; 
+                    if(isManual) document.getElementById('verifyBtn').innerText = "I Joined"; 
+                } else { 
+                    isMember = false; 
+                    // Only show popup if NOT silent (user clicked something)
+                    if(!silent) document.getElementById('joinPopup').style.display='flex'; 
+                    
+                    if(isManual) { document.getElementById('verifyBtn').innerText = "Try Again"; document.getElementById('verifyMsg').style.display = 'block'; document.getElementById('verifyMsg').innerText = "❌ Not joined yet!"; } 
+                }
+            } catch(e) {
+                if(isManual) { document.getElementById('verifyBtn').innerText = "Try Again"; document.getElementById('verifyMsg').style.display = 'block'; document.getElementById('verifyMsg').innerText = "⚠️ Server connection failed."; }
+            }
+        };
+
+        window.openChannel = () => window.open(`https://t.me/${settings.requiredChannel.replace('@','')}`, '_blank'); window.openSupport = () => window.open(settings.supportLink, '_blank'); window.cp = (id) => { navigator.clipboard.writeText(document.getElementById(id).innerText); alert("Copied"); }; window.copyRefLink = () => { navigator.clipboard.writeText(document.getElementById('refLinkInput').value); alert("Copied"); };
+        window.openWithdraw = () => { document.getElementById('wPopup').style.display = 'flex'; if(settings.withdrawStatus) { document.getElementById('wFormDiv').style.display='block'; document.getElementById('wOffMsg').style.display='none'; } else { document.getElementById('wFormDiv').style.display='none'; document.getElementById('wOffMsg').style.display='block'; document.getElementById('wOffMsg').innerText = settings.withdrawNotice || "Closed"; } }; window.closePop = (id) => document.getElementById(id).style.display='none';
+        
+        window.submitWithdraw = async () => { 
+            const pts = document.getElementById('wPoints').value; const meth = document.getElementById('wMethod').value; const num = document.getElementById('wNumber').value; if(!pts || !meth || !num) return alert("Fill all fields"); if(parseFloat(pts) < 1000) return alert("Min 1000 Pts"); 
+            await updateDoc(doc(db, "users", uid), { balance: increment(-parseFloat(pts)) }); 
+            await addDoc(collection(db, "requests"), { userId: uid, userName: user.first_name, type: "Withdraw", amount: parseFloat(pts), method: meth, userNumber: num, status: "Pending", date: serverTimestamp() }); 
+            fetch(`${BACKEND_URL}/api/notify-withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ username: user.username || user.first_name, amount: pts, method: meth, number: num }) }).catch(e => console.log("Notify Error", e));
+            alert("Submitted"); closePop('wPopup'); nav('history', document.getElementById('navHistory')); 
+        };
+
+        init();
+    </script>
+</body>
+</html>
