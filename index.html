@@ -8,90 +8,59 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <style>
-        /* COLOR PALETTE & VARS */
-        :root { 
-            --primary: #ff2b2b; 
-            --bg: #0f0f0f; 
-            --card: #1e1e1e; 
-            --text: #ffffff; 
-            --text-sec: #aaaaaa; 
-            --border: #333333; 
-            --input-bg: #2b2b2b; 
-            --shadow: 0 4px 15px rgba(0,0,0,0.3); 
-            --gradient: linear-gradient(135deg, #ff2b2b 0%, #d50000 100%); 
-            --capsule-bg: rgba(255, 255, 255, 0.1);
-            --verified: #1da1f2;
-        }
-
+        :root { --primary: #ff2b2b; --bg: #0f0f0f; --card: #1e1e1e; --text: #ffffff; --text-sec: #aaaaaa; --border: #333333; --input-bg: #2b2b2b; --shadow: 0 4px 15px rgba(0,0,0,0.3); --gradient: linear-gradient(135deg, #ff2b2b 0%, #d50000 100%); --capsule-bg: rgba(255, 255, 255, 0.1); --verified: #1da1f2; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding-bottom: 90px; -webkit-font-smoothing: antialiased; }
-        
         #loadingScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s; }
         .pulse-logo { width: 100px; animation: breathe 2s infinite; border-radius: 20px; }
         @keyframes breathe { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
-        
         .popup { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; display:none; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
         .popup-content { background: var(--card); padding: 25px 25px; width: 85%; max-width: 320px; border-radius: 20px; text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: popUpAnim 0.3s; }
         @keyframes popUpAnim { from{transform: scale(0.8); opacity: 0;} to{transform: scale(1); opacity: 1;} }
-        
         .header { background: var(--card); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 50; border-radius: 0 0 25px 25px; }
         .user-info { display: flex; align-items: center; gap: 12px; }
         .user-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
         .user-details { display: flex; flex-direction: column; gap: 4px; }
         .user-name { font-weight: 700; font-size: 15px; margin: 0; display: flex; align-items: center; gap: 6px; }
-        
         .verified-badge { color: #fff; background: var(--verified); border-radius: 50%; padding: 2px; font-size: 10px; width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(29, 161, 242, 0.6); animation: verifyPulse 2s infinite; }
         @keyframes verifyPulse { 0% { box-shadow: 0 0 0 0 rgba(29, 161, 242, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(29, 161, 242, 0); } 100% { box-shadow: 0 0 0 0 rgba(29, 161, 242, 0); } }
-
         .balance-capsule { display: inline-flex; align-items: center; background: var(--capsule-bg); padding: 2px 10px; border-radius: 50px; font-size: 12px; font-weight: 700; color: var(--primary); width: fit-content; border: 1px solid rgba(255,43,43,0.2); }
-        
-        /* Updated Support Icon Style */
         .icon-btn { font-size: 24px; color: #ffffff; cursor: pointer; margin-left: 15px; transition: 0.3s; filter: drop-shadow(0 0 8px rgba(255, 43, 43, 0.6)); }
         .icon-btn:hover { transform: scale(1.1); filter: drop-shadow(0 0 12px rgba(255, 43, 43, 1)); }
-
         .section { display: none; padding: 20px; animation: fadeIn 0.4s ease-out; }
         .section.active { display: block; }
         @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
         .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 15px; box-shadow: var(--shadow); border: 1px solid var(--border); }
-        
         .btn { width: 100%; padding: 14px; background: var(--gradient); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 15px; margin-top: 10px; box-shadow: 0 4px 10px rgba(255, 43, 43, 0.3); transition: transform 0.2s; }
         .btn:active { transform: scale(0.98); }
         .form-control { width: 100%; padding: 14px; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; outline: none; transition: border 0.3s; }
         .form-control:focus { border-color: var(--primary); }
-        
         .nav { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; padding: 15px 0 10px 0; border-top: 1px solid var(--border); z-index: 100; border-radius: 25px 25px 0 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
         .nav-item { text-align: center; color: var(--text-sec); font-size: 11px; width: 60px; transition: 0.3s; }
         .nav-item.active { color: var(--primary); transform: translateY(-3px); }
         .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
         .close-pop { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: var(--text-sec); }
-        
         .banner-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 10px; } .banner-container::-webkit-scrollbar { display: none; } .banner-slide { min-width: 100%; scroll-snap-align: center; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); } .banner-slide img { width: 100%; display: block; }
         .offer-btn { background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%); color: white; border: none; padding: 8px 24px; border-radius: 50px; font-weight: 600; font-size: 13px; text-decoration: none; display: inline-block; margin-top: 8px; }
-        
         .claim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         .ads-card { background: var(--gradient); border: none; color: white; padding: 20px 10px; border-radius: 24px; text-align: center; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 8px 20px rgba(255, 43, 43, 0.4); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; justify-content: center; align-items: center; height: 120px; }
         .ads-card:active { transform: scale(0.95); } .ads-card:hover { transform: translateY(-3px); } .ads-card.disabled { background: #2a2a2a; border: 1px solid #333; color: #666; pointer-events: none; opacity: 0.8; box-shadow: none; }
         .ads-icon { font-size: 32px; margin-bottom: 10px; transition: transform 0.5s; } .ads-card:hover .ads-icon { transform: rotate(10deg) scale(1.1); }
         .ads-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; } .ads-reward { font-size: 11px; opacity: 0.9; font-weight: 500; }
         .timer-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; flex-direction: column; justify-content:center; align-items:center; font-size:14px; font-weight:bold; color:white; backdrop-filter: blur(2px); z-index: 5; }
-
         .stats-box { text-align: center; margin-bottom: 20px; border: 1px solid var(--border); background: var(--card); border-radius: 20px; padding: 25px; position: relative; overflow: hidden; }
         .stats-box::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: var(--gradient); }
         .stats-grid { display: flex; justify-content: space-around; margin-bottom: 20px; }
         .stat-item h3 { font-size: 26px; margin: 0; color: var(--primary); font-weight: 800; }
         .stat-item p { font-size: 11px; margin: 0; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 5px; }
-        
         .convert-btn { background: var(--text); color: var(--bg); width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .convert-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-
         .refer-stats-container { background: #2c2c2e; border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; margin-bottom: 15px; border: 1px solid #333; }
         .refer-stat { flex: 1; text-align: center; } .refer-stat:first-child { border-right: 1px solid #444; }
         .refer-title { font-size: 12px; color: #aaaaaa; margin-bottom: 5px; } .refer-val { font-size: 20px; font-weight: bold; color: white; } .refer-val.earnings { color: #ff2b2b; } 
-
         .lb-item { display: flex; align-items: center; justify-content: space-between; background: var(--input-bg); padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
         .lb-left { display: flex; align-items: center; gap: 12px; } .lb-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover; } .lb-rank { font-weight: bold; width: 20px; text-align: center; }
         .lb-name { display: flex; align-items: center; gap: 5px; }
         .rank-1 i { color: #FFD700; font-size: 18px; } .rank-2 i { color: #C0C0C0; font-size: 18px; } .rank-3 i { color: #CD7F32; font-size: 18px; }
-        
         .input-group { position: relative; width: 100%; margin-bottom: 12px; } .input-group input { padding-right: 120px; margin-bottom: 0; }
         .calc-display { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-sec); font-size: 13px; font-weight: 600; pointer-events: none; display: none; }
         .popup-btn-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
@@ -262,6 +231,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, onSnapshot, query, where, orderBy, increment, serverTimestamp, limit } 
         from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 
         const BACKEND_URL = "https://dollar-bot-server.onrender.com"; 
 
@@ -276,6 +246,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
         const tg = window.Telegram.WebApp;
         tg.expand();
 
@@ -287,7 +258,6 @@
         const user = tg.initDataUnsafe.user || { id: "112233", first_name: "Guest", username: "guest" };
         const uid = user.id.toString();
 
-        // Load Ads dynamically
         function loadAdScripts(monetagId, gigapubId) {
             const oldM = document.getElementById('monetag-script');
             const oldG = document.getElementById('gigapub-script');
@@ -312,6 +282,24 @@
         }
 
         async function init() {
+            onAuthStateChanged(auth, async (u) => {
+                if (u) {
+                    console.log("Authenticated");
+                    startDataListeners();
+                } else {
+                    console.log("Signing in...");
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (e) {
+                        console.error(e);
+                        // Removed text update since text element is gone, simple console log
+                        console.log("Auth Error");
+                    }
+                }
+            });
+        }
+
+        function startDataListeners() {
             onSnapshot(doc(db, "settings", "appConfig"), async (s) => { 
                 if(s.exists()) {
                     settings = s.data();
@@ -340,16 +328,70 @@
                 });
             });
 
-            // USER CREATION & REFERRAL LOGIC
+            checkUser();
+            
+            onSnapshot(collection(db, "banners"), s => {
+                const bC = document.getElementById('bannerCon'); bC.innerHTML = "";
+                s.forEach(d => bC.innerHTML += `<div class="banner-slide"><img src="${d.data().image}" onclick="window.open('${d.data().link}','_blank')"></div>`);
+                startBannerSlide();
+            });
+
+            onSnapshot(collection(db, "offers"), s => {
+                const oC = document.getElementById('offerCon'); oC.innerHTML = "";
+                s.forEach(d => {
+                    const o = d.data();
+                    oC.innerHTML += `<div class="card" style="display:flex; gap:15px; align-items:center;"><img src="${o.image}" width="50" height="50" style="border-radius:12px; object-fit:cover;"><div style="flex:1;"><b style="font-size:15px;">${o.title}</b><br><a href="${o.link}" class="offer-btn" target="_blank">Visit Offer</a></div></div>`;
+                });
+            });
+
+            // TOP 20 LISTENER
+            const qUsers = query(collection(db, "users"), orderBy("referrals", "desc"), limit(20));
+            onSnapshot(qUsers, (s) => {
+                const l = document.getElementById('topList'); l.innerHTML = "";
+                let i = 1;
+                s.forEach(d => {
+                    const u = d.data();
+                    let rankIcon = i;
+                    if(i === 1) rankIcon = '<i class="fa-solid fa-trophy rank-1"></i>';
+                    else if(i === 2) rankIcon = '<i class="fa-solid fa-medal rank-2"></i>';
+                    else if(i === 3) rankIcon = '<i class="fa-solid fa-medal rank-3"></i>';
+                    let uName = u.name.substring(0,15);
+                    if((u.referrals || 0) >= 100) uName += ` <span class="verified-badge" style="width:12px; height:12px; font-size:8px;"><i class="fa-solid fa-check"></i></span>`;
+                    l.innerHTML += `<div class="lb-item"><div class="lb-left"><div class="lb-rank">${rankIcon}</div><img src="${u.photo||'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="lb-img"><div class="lb-info"><span class="lb-name">${uName}</span></div></div><span class="lb-refs">${u.referrals || 0} Ref</span></div>`;
+                    i++;
+                });
+            }, (error) => {
+                console.log("Leaderboard Index Error:", error);
+                document.getElementById('topList').innerHTML = "<p style='text-align:center;'>Setup required. Check Console.</p>";
+            });
+
+            // HISTORY LISTENER
+            const qHistory = query(collection(db, "requests"), where("userId", "==", uid), orderBy("date", "desc"));
+            onSnapshot(qHistory, (s) => {
+                const h = document.getElementById('histList'); h.innerHTML = "";
+                if(s.empty) h.innerHTML = "<p style='text-align:center; color:var(--text-sec);'>No history found</p>";
+                else {
+                    s.forEach(d => {
+                        const r = d.data();
+                        let col = r.status==='Approved'?'green': r.status==='Rejected'?'red':'orange';
+                        let txt = r.type==="Exchange" ? `${r.sendMethod} -> ${r.receiveMethod}` : `Withdraw: ${r.method}`;
+                        let amt = r.type==="Exchange" ? `$${r.amount}` : `৳${r.amount}`;
+                        h.innerHTML += `<div class="card" style="padding:15px; display:flex; justify-content:space-between;"><div><b>${r.type}</b><br><small>${txt}</small><br><b>${amt}</b></div><span style="color:${col}; font-weight:bold;">${r.status}</span></div>`;
+                    });
+                }
+            }, (error) => {
+                console.log("History Index Error:", error);
+                document.getElementById('histList').innerHTML = "<p style='text-align:center;'>Setup required. Check Console.</p>";
+            });
+        }
+
+        async function checkUser() {
             const uRef = doc(db, "users", uid);
             const snap = await getDoc(uRef);
             
             if (!snap.exists()) {
-                // Check for Referral param in Telegram Start Data
                 const startParam = tg.initDataUnsafe.start_param; 
                 let referrer = null;
-                
-                // Validate Referrer (Must exist and not be self)
                 if(startParam && startParam.toString() !== uid) {
                     referrer = startParam.toString();
                 }
@@ -363,10 +405,7 @@
 
                 if(referrer) { 
                     try { 
-                        // Update Referrer Count
                         await updateDoc(doc(db, "users", referrer), { referrals: increment(1) });
-                        
-                        // Backend Notification
                         fetch(`${BACKEND_URL}/api/notify-refer-join`, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
@@ -401,50 +440,6 @@
 
                 checkDailyTimers(userData);
                 checkConvertButton(userData.balance);
-            });
-
-            onSnapshot(collection(db, "banners"), s => {
-                const bC = document.getElementById('bannerCon'); bC.innerHTML = "";
-                s.forEach(d => bC.innerHTML += `<div class="banner-slide"><img src="${d.data().image}" onclick="window.open('${d.data().link}','_blank')"></div>`);
-                startBannerSlide();
-            });
-
-            onSnapshot(collection(db, "offers"), s => {
-                const oC = document.getElementById('offerCon'); oC.innerHTML = "";
-                s.forEach(d => {
-                    const o = d.data();
-                    oC.innerHTML += `<div class="card" style="display:flex; gap:15px; align-items:center;"><img src="${o.image}" width="50" height="50" style="border-radius:12px; object-fit:cover;"><div style="flex:1;"><b style="font-size:15px;">${o.title}</b><br><a href="${o.link}" class="offer-btn" target="_blank">Visit Offer</a></div></div>`;
-                });
-            });
-
-            onSnapshot(query(collection(db, "users"), orderBy("referrals", "desc"), limit(20)), s => {
-                const l = document.getElementById('topList'); l.innerHTML = "";
-                let i = 1;
-                s.forEach(d => {
-                    const u = d.data();
-                    let rankIcon = i;
-                    if(i === 1) rankIcon = '<i class="fa-solid fa-trophy rank-1"></i>';
-                    else if(i === 2) rankIcon = '<i class="fa-solid fa-medal rank-2"></i>';
-                    else if(i === 3) rankIcon = '<i class="fa-solid fa-medal rank-3"></i>';
-                    let uName = u.name.substring(0,15);
-                    if((u.referrals || 0) >= 100) uName += ` <span class="verified-badge" style="width:12px; height:12px; font-size:8px;"><i class="fa-solid fa-check"></i></span>`;
-                    l.innerHTML += `<div class="lb-item"><div class="lb-left"><div class="lb-rank">${rankIcon}</div><img src="${u.photo||'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="lb-img"><div class="lb-info"><span class="lb-name">${uName}</span></div></div><span class="lb-refs">${u.referrals || 0} Ref</span></div>`;
-                    i++;
-                });
-            });
-
-            onSnapshot(query(collection(db, "requests"), where("userId", "==", uid), orderBy("date", "desc")), (s) => {
-                const h = document.getElementById('histList'); h.innerHTML = "";
-                if(s.empty) h.innerHTML = "<p style='text-align:center; color:var(--text-sec);'>No history found</p>";
-                else {
-                    s.forEach(d => {
-                        const r = d.data();
-                        let col = r.status==='Approved'?'green': r.status==='Rejected'?'red':'orange';
-                        let txt = r.type==="Exchange" ? `${r.sendMethod} -> ${r.receiveMethod}` : `Withdraw: ${r.method}`;
-                        let amt = r.type==="Exchange" ? `$${r.amount}` : `৳${r.amount}`;
-                        h.innerHTML += `<div class="card" style="padding:15px; display:flex; justify-content:space-between;"><div><b>${r.type}</b><br><small>${txt}</small><br><b>${amt}</b></div><span style="color:${col}; font-weight:bold;">${r.status}</span></div>`;
-                    });
-                }
             });
         }
 
@@ -668,7 +663,50 @@
         window.nav = (n, e) => { if(!isMember && n !== 'home') { verifyJoin(false); return; } document.querySelectorAll('.section').forEach(x=>x.classList.remove('active')); document.getElementById(n).classList.add('active'); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); e.classList.add('active'); };
         
         window.manualVerify = () => verifyJoin(false, true); 
-        window.verifyJoin = async (silent = false, isManual = false) => { if(!settings || !settings.requiredChannel) { isMember=true; document.getElementById('joinPopup').style.display='none'; return; } if(isManual) document.getElementById('verifyBtn').innerText="Checking..."; try { const res = await fetch(`${BACKEND_URL}/api/verify-member`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:uid, channelUsername:settings.requiredChannel}) }); const data = await res.json(); if(data.isMember) { isMember=true; document.getElementById('joinPopup').style.display='none'; if(isManual) document.getElementById('verifyBtn').innerText="I Joined"; } else { isMember=false; if(!silent) document.getElementById('joinPopup').style.display='flex'; if(isManual) { document.getElementById('verifyBtn').innerText="Try Again"; document.getElementById('verifyMsg').style.display='block'; document.getElementById('verifyMsg').innerText="❌ Not joined yet!"; } } } catch(e) { if(isManual) document.getElementById('verifyBtn').innerText="Try Again"; } };
+        window.verifyJoin = async (silent = false, isManual = false) => { 
+            if(!settings || !settings.requiredChannel) { 
+                isMember=true; 
+                document.getElementById('joinPopup').style.display='none'; 
+                return; 
+            } 
+            if(isManual) {
+                const btn = document.getElementById('verifyBtn');
+                btn.innerText = "Connecting...";
+                btn.disabled = true;
+            }
+
+            try { 
+                const res = await fetch(`${BACKEND_URL}/api/verify-member`, { 
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({userId:uid, channelUsername:settings.requiredChannel}) 
+                }); 
+                const data = await res.json(); 
+                
+                if(data.isMember) { 
+                    isMember=true; 
+                    document.getElementById('joinPopup').style.display='none'; 
+                    if(isManual) {
+                        document.getElementById('verifyBtn').innerText = "I Joined";
+                        document.getElementById('verifyBtn').disabled = false;
+                    }
+                } else { 
+                    isMember=false; 
+                    if(!silent) document.getElementById('joinPopup').style.display='flex'; 
+                    if(isManual) { 
+                        document.getElementById('verifyBtn').innerText = "Try Again"; 
+                        document.getElementById('verifyBtn').disabled = false;
+                        document.getElementById('verifyMsg').style.display = 'block'; 
+                        document.getElementById('verifyMsg').innerText = "Not joined yet!"; 
+                    } 
+                } 
+            } catch(e) { 
+                if(isManual) {
+                    document.getElementById('verifyBtn').innerText = "Try Again";
+                    document.getElementById('verifyBtn').disabled = false;
+                }
+            } 
+        };
         window.openChannel = () => window.open(`https://t.me/${settings.requiredChannel.replace('@','')}`, '_blank'); window.openSupport = () => window.open(settings.supportLink, '_blank'); window.cp = (id) => { navigator.clipboard.writeText(document.getElementById(id).innerText); alert("Copied"); }; window.copyRefLink = () => { navigator.clipboard.writeText(document.getElementById('refLinkInput').value); alert("Copied"); };
         
         init();
