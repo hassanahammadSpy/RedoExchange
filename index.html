@@ -292,7 +292,6 @@
                         await signInAnonymously(auth);
                     } catch (e) {
                         console.error(e);
-                        // Removed text update since text element is gone, simple console log
                         console.log("Auth Error");
                     }
                 }
@@ -365,23 +364,49 @@
                 document.getElementById('topList').innerHTML = "<p style='text-align:center;'>Setup required. Check Console.</p>";
             });
 
-            // HISTORY LISTENER
-            const qHistory = query(collection(db, "requests"), where("userId", "==", uid), orderBy("date", "desc"));
+            // HISTORY LISTENER (FIXED - NO INDEX REQUIRED)
+            const qHistory = query(collection(db, "requests"), where("userId", "==", uid));
+            
             onSnapshot(qHistory, (s) => {
-                const h = document.getElementById('histList'); h.innerHTML = "";
-                if(s.empty) h.innerHTML = "<p style='text-align:center; color:var(--text-sec);'>No history found</p>";
-                else {
+                const h = document.getElementById('histList'); 
+                h.innerHTML = "";
+                
+                if(s.empty) {
+                    h.innerHTML = "<p style='text-align:center; color:var(--text-sec);'>No history found</p>";
+                } else {
+                    let historyArray = [];
                     s.forEach(d => {
-                        const r = d.data();
+                        historyArray.push({ id: d.id, ...d.data() });
+                    });
+
+                    // Sort by Date Descending using JavaScript
+                    historyArray.sort((a, b) => {
+                        const dateA = a.date ? a.date.seconds : 0;
+                        const dateB = b.date ? b.date.seconds : 0;
+                        return dateB - dateA; 
+                    });
+
+                    historyArray.forEach(r => {
                         let col = r.status==='Approved'?'green': r.status==='Rejected'?'red':'orange';
                         let txt = r.type==="Exchange" ? `${r.sendMethod} -> ${r.receiveMethod}` : `Withdraw: ${r.method}`;
                         let amt = r.type==="Exchange" ? `$${r.amount}` : `৳${r.amount}`;
-                        h.innerHTML += `<div class="card" style="padding:15px; display:flex; justify-content:space-between;"><div><b>${r.type}</b><br><small>${txt}</small><br><b>${amt}</b></div><span style="color:${col}; font-weight:bold;">${r.status}</span></div>`;
+                        
+                        h.innerHTML += `
+                        <div class="card" style="padding:15px; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <b style="color:var(--primary);">${r.type}</b>
+                                <br><small style="color:var(--text-sec);">${txt}</small>
+                                <br><b style="font-size:14px;">${amt}</b>
+                            </div>
+                            <div style="text-align:right;">
+                                <span style="color:${col}; font-weight:bold; font-size:12px; border:1px solid ${col}; padding:3px 8px; border-radius:10px;">${r.status}</span>
+                                <br><small style="font-size:10px; color:#666;">${r.date ? new Date(r.date.seconds * 1000).toLocaleDateString() : ''}</small>
+                            </div>
+                        </div>`;
                     });
                 }
             }, (error) => {
-                console.log("History Index Error:", error);
-                document.getElementById('histList').innerHTML = "<p style='text-align:center;'>Setup required. Check Console.</p>";
+                console.log("History Error:", error);
             });
         }
 
