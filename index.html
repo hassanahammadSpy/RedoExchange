@@ -164,7 +164,7 @@
 <body class="dark-mode">
 
     <div id="loadingScreen">
-        <img src="https://i.ibb.co.com/HTYbfgCQ/20260109-193516.png" class="pulse-logo" id="loadingLogo">
+        <img src="https://i.ibb.co.com/PZc14DXD/20260222-151038.png" class="pulse-logo" id="loadingLogo">
     </div>
 
     <div id="mainApp" style="display:none;">
@@ -470,7 +470,8 @@
         
         const localWallets = [
             { name: "Bkash", image: "https://i.ibb.co.com/fYGQL5td/1656235223bkash-logo.png" },
-            { name: "Nagad", image: "https://i.ibb.co.com/ychhHJJK/images-4.png" }
+            { name: "Nagad", image: "https://i.ibb.co.com/ychhHJJK/images-4.png" },
+            { name: "Binance", image: "https://i.ibb.co.com/qFkp7HKf/unnamed-1.png" }
         ];
 
         let isMember = false;
@@ -622,9 +623,12 @@
             if(type === 'send') {
                 document.getElementById('searchWrapper').style.display = "block";
                 data = globalMethods;
-            } else if (type === 'receive' || type === 'withdraw') {
+            } else if (type === 'receive') {
                 document.getElementById('searchWrapper').style.display = "none";
                 data = localWallets;
+            } else if (type === 'withdraw') {
+                document.getElementById('searchWrapper').style.display = "none";
+                data = localWallets.filter(item => item.name === 'Bkash' || item.name === 'Binance');
             } else if (type === 'deposit') {
                 document.getElementById('searchWrapper').style.display = "block";
                 data = globalDepMethods;
@@ -820,7 +824,7 @@
         /* --- TASK LOGIC --- */
         window.openCreateTask = () => { document.getElementById('createTaskSheet').classList.add('show'); };
         window.checkTaskType = () => { if(document.getElementById('taskType').value === 'Channel') document.getElementById('adminAlertPopup').style.display = 'flex'; };
-        window.openTelegramForAdmin = () => { alert("Add @" + settings.botUsername + " as admin."); document.getElementById('adminAlertPopup').style.display = 'none'; };
+        window.openTelegramForAdmin = () => { window.open("https://t.me/RedExChangerBot?startchannel=true", "_blank"); document.getElementById('adminAlertPopup').style.display = 'none'; };
         
         window.calcTaskCost = () => {
             const count = parseInt(document.getElementById('taskCount').value) || 0;
