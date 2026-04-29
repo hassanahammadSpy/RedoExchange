@@ -119,7 +119,6 @@
         .input-group { position: relative; width: 100%; margin-bottom: 12px; display: flex; align-items: center; }
         .input-group input { padding-right: 120px; margin-bottom: 0; flex: 1; }
         
-        /* UPDATED: Rate text matching the top balance style */
         .calc-display { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--primary); font-size: 13px; font-weight: bold; pointer-events: none; background: var(--capsule-bg); padding: 5px 12px; border-radius: 50px; border: 1px solid rgba(255, 43, 43, 0.2); display: none; }
 
         /* Method Items */
@@ -225,7 +224,6 @@
             <div class="card">
                 <h3>Exchange Currency</h3>
                 
-                <!-- UPDATED: Method image support inside trigger -->
                 <div id="sendTrigger" class="select-trigger" onclick="openSelectSheet('send')">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <img id="sendImg" src="" style="width:24px; height:24px; border-radius:50%; display:none; object-fit:cover;">
@@ -248,12 +246,10 @@
                 </div>
                 
                 <div class="input-group">
-                    <!-- UPDATED: Placeholder text changed -->
                     <input type="number" id="exAmt" class="form-control" placeholder="Write your amount" oninput="calcExchange()">
                     <span class="calc-display" id="calcSpan"><b id="calcResInside"></b></span>
                 </div>
                 
-                <!-- UPDATED: Screenshot Upload UI & Image Preview -->
                 <div style="display:flex; gap:10px; margin-bottom:12px;">
                     <input type="text" id="exTrx" class="form-control" placeholder="Trx ID" style="margin-bottom:0; flex:1;">
                     <div class="upload-btn-wrapper">
@@ -267,7 +263,6 @@
                 <input type="hidden" id="exImgUrl">
                 <p id="exUploadStatus" style="font-size:11px; color:var(--primary); margin: -5px 0 10px 5px; display:none;">Uploading screenshot...</p>
                 
-                <!-- UPDATED: Receive method image support -->
                 <div id="recTrigger" class="select-trigger" onclick="openSelectSheet('receive')">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <img id="recImg" src="" style="width:24px; height:24px; border-radius:50%; display:none; object-fit:cover;">
@@ -534,6 +529,8 @@
 
         let currentSelectionType = ''; 
         let currentList =[];
+        
+        let lastMyReferId = null; // Pagination Tracking
 
         function hideLoadingScreen() {
             const loadingScreen = document.getElementById('loadingScreen');
@@ -669,44 +666,75 @@
             document.getElementById('slide' + tab).classList.add('active');
             
             if(tab === 'MyRefer') {
+                lastMyReferId = null; // Tab change korle notun kore load hobe
                 loadMyReferrals();
             }
         };
 
-        window.loadMyReferrals = async () => {
+        // UPDATED: PAGINATION AND COMMISSION LOADING
+        window.loadMyReferrals = async (isNextPage = false) => {
+            const listDiv = document.getElementById('myReferList');
+            const loadMoreBtn = document.getElementById('loadMoreRefBtn');
+            
+            if (!isNextPage) {
+                lastMyReferId = null;
+            }
+            
+            listDiv.innerHTML = "<p style='text-align:center; color:var(--text-sec);'><i class='fa-solid fa-spinner fa-spin'></i> Loading...</p>";
+            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+
             try {
-                const res = await fetch(`${BACKEND_URL}/api/my-referrals/${uid}`);
+                let url = `${BACKEND_URL}/api/my-referrals/${uid}`;
+                if (isNextPage && lastMyReferId) url += `?lastId=${lastMyReferId}`;
+                
+                const res = await fetch(url);
                 const data = await res.json();
-                const listDiv = document.getElementById('myReferList');
-                listDiv.innerHTML = "";
+                
+                listDiv.innerHTML = ""; // Notun page er data show er age list faka kora
                 
                 if(data.success && data.list.length > 0) {
                     data.list.forEach(r => {
                         let shortName = r.name.substring(0,15);
+                        let comm = parseFloat(r.commission).toFixed(2);
                         listDiv.innerHTML += `
                         <div class="lb-item">
                             <div class="lb-left">
-                                <img src="${r.photoUrl || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="lb-img">
+                                <img src="${r.photo || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="lb-img">
                                 <div class="lb-info">
                                     <span class="lb-name">${shortName}</span>
-                                    <span style="font-size:11px; color:var(--text-sec);">Joined: ${r.joinedAt || 'Recently'}</span>
                                 </div>
                             </div>
                             <div style="text-align:right;">
                                 <span style="font-size:11px; color:var(--text-sec);">Commission</span><br>
-                                <b style="color:var(--primary); font-size:13px;"><i class="fa-solid fa-bolt"></i> 10% Active</b>
+                                <b style="color:var(--primary); font-size:13px;">৳ ${comm}</b>
                             </div>
                         </div>`;
                     });
+                    
+                    lastMyReferId = data.lastId;
+                    
+                    // Handle Next Page Button
+                    let existingBtn = document.getElementById('loadMoreRefBtn');
+                    if (data.hasMore) {
+                        if (!existingBtn) {
+                            listDiv.insertAdjacentHTML('afterend', `<button id="loadMoreRefBtn" class="btn" style="background:transparent; border:1px solid var(--primary); color:var(--primary); margin-top:10px;" onclick="loadMyReferrals(true)"><i class="fa-solid fa-arrows-rotate"></i> Next 50 Users</button>`);
+                        } else {
+                            existingBtn.style.display = 'block';
+                            existingBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Next 50 Users';
+                        }
+                    } else {
+                        if (existingBtn) existingBtn.style.display = 'none';
+                    }
+                    
                 } else {
-                    listDiv.innerHTML = "<p style='text-align:center; color:var(--text-sec); padding:20px;'>You haven't referred anyone yet.</p>";
+                    listDiv.innerHTML = "<p style='text-align:center; color:var(--text-sec); padding:20px;'>No more referrals found.</p>";
                 }
             } catch (e) {
                 console.error("Error fetching my referrals", e);
+                listDiv.innerHTML = "<p style='text-align:center; color:red; padding:20px;'>Failed to load. Please try again.</p>";
             }
         };
 
-        // UPDATED: Screenshot Preview Show Logic
         window.uploadExImage = async () => {
             const fileInput = document.getElementById('exImgFile');
             const file = fileInput.files[0];
@@ -793,7 +821,6 @@
 
         window.filterMethods = () => { const query = document.getElementById('methodSearch').value.toLowerCase(); const filtered = currentList.filter(m => m.name.toLowerCase().includes(query)); renderMethodList(filtered); };
 
-        // UPDATED: Select method image logic
         window.selectItem = (item) => {
             const name = item.name; 
             const img = item.image || 'https://cdn-icons-png.flaticon.com/512/1175/1175249.png';
@@ -881,7 +908,6 @@
             alert("Withdraw Submitted! Balance deducted."); closeSheet('withdrawSheet'); nav('history', document.getElementById('navHistory')); 
         };
 
-        // UPDATED: Exchange Validation and Form Reset
         window.reqExchange = async () => { 
             if(!isMember) { alert("Please join our channel first!"); return; }
             const sendM = document.getElementById('sendM').value; 
@@ -920,7 +946,6 @@
 
             alert("Submitted Successfully!");
             
-            // CLEAR FORM AFTER SUBMISSION
             document.getElementById('exAmt').value = ''; 
             document.getElementById('exTrx').value = ''; 
             document.getElementById('exNum').value = ''; 
@@ -987,7 +1012,6 @@
             }, 3000);
         }
 
-        /* --- TASK LOGIC --- */
         window.openCreateTask = () => { document.getElementById('createTaskSheet').classList.add('show'); };
         window.checkTaskType = () => { if(document.getElementById('taskType').value === 'Channel') document.getElementById('adminAlertPopup').style.display = 'flex'; };
         window.openTelegramForAdmin = () => { window.open("https://t.me/RedExChangerBot?startchannel=true", "_blank"); document.getElementById('adminAlertPopup').style.display = 'none'; };
