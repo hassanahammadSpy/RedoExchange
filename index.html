@@ -188,7 +188,7 @@
     <div id="joinScreen">
         <i class="fa-brands fa-telegram"></i>
         <h2>Join Our Community</h2>
-        <p>এই বট টি ব্যাবহার করতে প্রথমে আমাদের অফিসিয়াল Channel এ Join করতে হবে।</p>
+        <p>এই বট টি ব্যাবহার করতে প্রথমে আমাদের অফিসিয়াল Channel এ Join করতে হবে।</p>
         <div class="join-screen-btns">
             <button class="btn" onclick="openChannel()">Join Channel</button>
             <button class="btn" id="verifyBtn" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border);" onclick="manualVerify()">I Have Joined</button>
@@ -238,6 +238,9 @@
                         <span style="font-size:12px; color:var(--text-sec);">Rate: <b style="color:var(--text);" id="infoRate">0 BDT</b></span>
                         <span style="font-size:12px; color:var(--text-sec);">Min: <b style="color:var(--text);">$<span id="infoMin">0</span></b></span>
                     </div>
+                    <div id="infoFeeRow" style="display:none; margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+                        <span style="font-size:12px; color:var(--text-sec);">Exchange Fee: <b style="color:var(--primary);" id="infoFee">0%</b></span>
+                    </div>
                     <small style="color:var(--primary); font-weight:bold;">Send Address:</small>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                         <span id="admWallet" style="font-family:monospace; color:var(--text); font-size:13px; word-break: break-all;">...</span>
@@ -249,6 +252,7 @@
                     <input type="number" id="exAmt" class="form-control" placeholder="Write your amount" oninput="calcExchange()">
                     <span class="calc-display" id="calcSpan"><b id="calcResInside"></b></span>
                 </div>
+                <p id="calcNetNote" style="display:none; font-size:11px; color:var(--text-sec); margin: -8px 0 12px 5px;"></p>
                 
                 <div style="display:flex; gap:10px; margin-bottom:12px;">
                     <input type="text" id="exTrx" class="form-control" placeholder="Trx ID" style="margin-bottom:0; flex:1;">
@@ -575,7 +579,7 @@
                 globalMethods =[]; methodMap = {};
                 s.forEach(d => { 
                     const data = d.data(); const item = { ...data, id: d.id }; globalMethods.push(item);
-                    methodMap[data.name] = { wallet: data.wallet, rate: data.rate || 0, min: data.min || 5, image: data.image }; 
+                    methodMap[data.name] = { wallet: data.wallet, rate: data.rate || 0, min: data.min || 5, image: data.image, fee: data.fee || 0 }; 
                 });
             });
 
@@ -806,7 +810,7 @@
             list.forEach(item => {
                 const img = item.image || 'https://cdn-icons-png.flaticon.com/512/1175/1175249.png'; 
                 let detailText = "";
-                if(currentSelectionType === 'send') detailText = `Rate: ${item.rate || 0} ৳ | Min: $${item.min || 0}`;
+                if(currentSelectionType === 'send') detailText = `Rate: ${item.rate || 0} ৳ | Min: $${item.min || 0}${item.fee ? ' | Fee: ' + item.fee + '%' : ''}`;
                 else if(currentSelectionType === 'deposit') detailText = `Min Deposit: ${item.minAmount || 0} ৳`;
                 else if(currentSelectionType === 'receive' || currentSelectionType === 'withdraw') detailText = "Personal"; 
                 else detailText = `Rate: 1$ = ${item.rate || 0} ৳`; 
@@ -939,7 +943,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    requestId: docRef.id, username: user.username || user.first_name, userId: uid,
+                    requestId: docRef.id, username: user.username || user.first_name, firstName: user.first_name, userId: uid,
                     sendMethod: sendM, recMethod: recM, number: num, trx: finalTrx, amount: parseFloat(amt), bdtAmount: bdtAmount, imageUrl: imgUrl
                 })
             }).catch(e => console.error("Admin notify error:", e));
@@ -957,6 +961,7 @@
             document.getElementById('exImgIcon').className = 'fa-solid fa-image'; 
             document.getElementById('exUploadStatus').style.display = 'none'; 
             document.getElementById('calcSpan').style.display = 'none';
+            document.getElementById('calcNetNote').style.display = 'none';
 
             nav('history', document.getElementById('navHistory')); 
         };
@@ -1121,7 +1126,15 @@
 
         window.updWallet = () => { 
             const m = document.getElementById('sendM').value; const div = document.getElementById('walletDiv'); 
-            if(methodMap[m]) { div.style.display = "block"; document.getElementById('admWallet').innerText = methodMap[m].wallet; document.getElementById('infoRate').innerText = methodMap[m].rate + " ৳"; document.getElementById('infoMin').innerText = methodMap[m].min; } 
+            if(methodMap[m]) { 
+                div.style.display = "block"; 
+                document.getElementById('admWallet').innerText = methodMap[m].wallet; 
+                document.getElementById('infoRate').innerText = methodMap[m].rate + " ৳"; 
+                document.getElementById('infoMin').innerText = methodMap[m].min; 
+                const feeRow = document.getElementById('infoFeeRow');
+                if(methodMap[m].fee > 0) { feeRow.style.display = "block"; document.getElementById('infoFee').innerText = methodMap[m].fee + "%"; } 
+                else { feeRow.style.display = "none"; }
+            } 
             else { div.style.display = "none"; } calcExchange(); 
         };
 
@@ -1129,9 +1142,23 @@
             const m = document.getElementById('sendM').value; 
             const amt = parseFloat(document.getElementById('exAmt').value); 
             if(methodMap[m] && amt > 0) { 
+                const grossBdt = amt * methodMap[m].rate;
                 document.getElementById('calcSpan').style.display = "block"; 
-                document.getElementById('calcResInside').innerText = (amt * methodMap[m].rate).toFixed(2) + " ৳"; 
-            } else { document.getElementById('calcSpan').style.display = "none"; } 
+                document.getElementById('calcResInside').innerText = grossBdt.toFixed(2) + " ৳"; 
+
+                const fee = methodMap[m].fee || 0;
+                const note = document.getElementById('calcNetNote');
+                if(fee > 0) {
+                    const netBdt = grossBdt - (grossBdt * fee / 100);
+                    note.style.display = "block";
+                    note.innerText = `Exchange Fee ${fee}% কাটার পর আনুমানিক পাবেন: ${netBdt.toFixed(2)} ৳ (রেফার কমিশন থাকলে তা আলাদাভাবে কাটবে)`;
+                } else {
+                    note.style.display = "none";
+                }
+            } else { 
+                document.getElementById('calcSpan').style.display = "none"; 
+                document.getElementById('calcNetNote').style.display = "none";
+            } 
         };
 
         window.checkFeeWarning = () => { 
